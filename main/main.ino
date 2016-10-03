@@ -10,7 +10,7 @@
   #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 #endif
 
-#define DEBUG 1;
+//#define DEBUG 1;
 
 /**
  * Номер пина для импульсного питания
@@ -108,10 +108,11 @@ const unsigned int TIMER_COUNTS[TIMERS_COUNT] = {TM_POW, TM_BTN, TM_1s, TM_BLINK
 DS1307 clock;
 
 //режим отображения
-const byte MODES_COUNT = 8; //количество режимов
+const byte MODES_COUNT = 9; //количество режимов
 
 const byte MODE_TIME = 1; //время
 const byte MODE_DATE = 2; //дата
+const byte MODE_TEMP = 3; //температура
 const byte MODE_CHANGE_S = 10; //изменяем секунды
 const byte MODE_CHANGE_M = 11; //изменяем минуты
 const byte MODE_CHANGE_H = 12; //изменяем часы
@@ -119,7 +120,7 @@ const byte MODE_CHANGE_y = 13; //изменяем год
 const byte MODE_CHANGE_m = 14; //изменяем месяц
 const byte MODE_CHANGE_d = 15; //изменяем день
 
-const byte MODES[MODES_COUNT] = {MODE_TIME, MODE_DATE, MODE_CHANGE_S, MODE_CHANGE_M, MODE_CHANGE_H, MODE_CHANGE_y, MODE_CHANGE_m, MODE_CHANGE_d};
+const byte MODES[MODES_COUNT] = {MODE_TIME, MODE_DATE, MODE_TEMP, MODE_CHANGE_S, MODE_CHANGE_M, MODE_CHANGE_H, MODE_CHANGE_y, MODE_CHANGE_m, MODE_CHANGE_d};
 volatile byte mode = 0; //текущий режим
 
 void setup() {
@@ -131,10 +132,12 @@ void setup() {
   initButtons();
   initClock();
   initMCP();
+  
+  //theTime();
 }
 
 void loop() {
-  //первые 3 секунды стабилизируем высокое напряжение
+  //первые секунды стабилизируем высокое напряжение
   if(millis() < POWER_SETUP_TIME){
     adjustPower();
   }else{
@@ -142,7 +145,8 @@ void loop() {
   }
   //сбрасываем режим в дефолтный
   if(MODES[mode] != MODE_TIME && millis() - buttonReadTime > MODE_RESET_TIME){
-    mode = MODE_TIME;
+    mode = 0;
+    blinkMask = 0;
   }
   int t;
   for(t = 0; t < TIMERS_COUNT; t++){
@@ -181,6 +185,8 @@ void updateDigits(){
     showTime();
   }else if(MODES[mode] == MODE_DATE || MODES[mode] == MODE_CHANGE_y){
     showDate();
+  }else if(MODES[mode] == MODE_TEMP){
+    showTemp();
   }
 }
 
@@ -275,6 +281,28 @@ void showDate(){
   
   timeDisp[1] = clock.year / 10;
   timeDisp[0] = clock.year % 10;
+}
+
+//Вносим в буфер текущую температуру
+void showTemp(){
+  float fTemp = clock.readTemperature();
+  byte temp = (byte)fTemp;
+  if(fTemp >= 0.5){
+    temp++;
+  }
+#ifdef DEBUG
+  Serial.print(fTemp);
+  Serial.print(": ");
+  Serial.println(temp);
+#endif
+  timeDisp[5] = 0;
+  timeDisp[4] = 0;
+  
+  timeDisp[3] = temp / 10;
+  timeDisp[2] = temp % 10;
+  
+  timeDisp[1] = 0;
+  timeDisp[0] = 0;
 }
 
 //Select tube and display right number
@@ -462,18 +490,17 @@ void setDate(){
   clock.setTime();
 }
 
-/*
+
 //Setup time from PC to DS1307 chip
 char compileTime[] = __TIME__;
 void theTime(){
   byte hour = getInt(compileTime, 0);
   byte minute = getInt(compileTime, 3);
-  byte second = getInt(compileTime, 6);
-  clock.fillByYMD(2015,12,11);
+  byte second = getInt(compileTime, 6) + 15;  //compensate time between compile and upload to arduino
+  clock.fillByYMD(16,8,22);
   clock.fillByHMS(hour, minute, second);
-//  clock.fillDayOfWeek(FRI);
   clock.setTime();
 }
 char getInt(const char* string, int startIndex) {
   return int(string[startIndex] - '0') * 10 + int(string[startIndex+1]) - '0';
-}*/
+}

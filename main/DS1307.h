@@ -29,6 +29,7 @@
 #include <Arduino.h>
 
 #define DS1307_I2C_ADDRESS 0x68
+#define DS3231_REG_TEMPERATURE      (0x11)
 
 class DS1307
 {
@@ -40,6 +41,7 @@ public:
 	void begin();
 	void setTime(void);
 	void getTime(void);
+	float readTemperature(void);
 	void fillByHMS(uint8_t _hour, uint8_t _minute, uint8_t _second);
 	void fillByYMD(uint8_t _year, uint8_t _month, uint8_t _day);
 	uint8_t second;

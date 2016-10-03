@@ -73,6 +73,22 @@ void DS1307::setTime()
 	Wire.write(decToBcd(year));
 	Wire.endTransmission();
 }
+
+float DS1307::readTemperature(void)
+{
+    uint8_t msb, lsb;
+
+    Wire.beginTransmission(DS1307_I2C_ADDRESS);
+    Wire.write(DS3231_REG_TEMPERATURE);
+    Wire.endTransmission();
+    Wire.requestFrom(DS1307_I2C_ADDRESS, 2);
+    while(!Wire.available()) {};
+    msb = Wire.read();
+    lsb = Wire.read();
+    
+    return ((((short)msb << 8) | (short)lsb) >> 6) / 4.0f;
+}
+
 void DS1307::fillByHMS(uint8_t _hour, uint8_t _minute, uint8_t _second)
 {
 	// assign variables
