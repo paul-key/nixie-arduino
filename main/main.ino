@@ -209,12 +209,12 @@ void initPWM(){
   pinMode(PWM_PIN, OUTPUT);
 
   //включаем таймер
-  sbi(TCCR2A,COM2A1);
+  sbi(TCCR2A,COM2A1); //Clear OC2A on Compare Match, set OC2A at BOTTOM (non-inverting mode)
   cbi(TCCR2A,COM2A0);
   sbi(TCCR2A,COM2B1);
   cbi(TCCR2A,COM2B0);
 
-  //Счетчик до 255 получаем 31.25 kHz при 8MHz кварце
+  //Счетчик до 255 получаем 31.25 kHz при 8MHz кварце Fast PWM
   cbi(TCCR2B,WGM22);
   sbi(TCCR2A,WGM21);
   sbi(TCCR2A,WGM20);
